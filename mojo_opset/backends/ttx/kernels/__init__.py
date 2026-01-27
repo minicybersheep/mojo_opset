@@ -29,6 +29,8 @@ rope_bwd_impl = getattr(ttx_backend_module, "rope_bwd_impl")
 swiglu_fwd_impl = getattr(ttx_backend_module, "swiglu_fwd_impl")
 swiglu_bwd_impl = getattr(ttx_backend_module, "swiglu_bwd_impl")
 
+quant_int8_infer_impl = getattr(ttx_backend_module, "quant_int8_infer_impl")
+
 rmsnorm_fwd_impl = getattr(ttx_backend_module, "rmsnorm_fwd_impl")
 rmsnorm_bwd_impl = getattr(ttx_backend_module, "rmsnorm_bwd_impl")
 rmsnorm_infer_impl = getattr(ttx_backend_module, "rmsnorm_infer_impl")
@@ -48,6 +50,7 @@ sdpa_bwd_impl = getattr(ttx_backend_module, "sdpa_bwd_impl")
 diffusion_attention_fwd_impl = getattr(ttx_backend_module, "diffusion_attention_fwd_impl")
 diffusion_attention_bwd_impl = getattr(ttx_backend_module, "diffusion_attention_bwd_impl")
 
+matmul_impl = getattr(ttx_backend_module, "matmul_impl")
 m_grouped_matmul_impl = getattr(ttx_backend_module, "m_grouped_matmul_impl")
 k_grouped_matmul_impl = getattr(ttx_backend_module, "k_grouped_matmul_impl")
 
@@ -231,6 +234,28 @@ if os.getenv("MOJO_RUN_MODE", "EAGER") == "COMPILE":
         cos: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         return torch.empty_like(dq), torch.empty_like(dk)
+
+
+    # ====================================
+    # Register Quant
+    # ====================================
+    @torch.library.custom_op("ttx::quant_int8_infer", mutates_args={})
+    def quant_int8_infer(
+        input_tensor: torch.Tensor,
+        scale_tensor: torch.Tensor,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        return quant_int8_infer_impl(input_tensor, scale_tensor)
+
+
+    @quant_int8_infer.register_fake
+    def quant_int8_infer_fake(
+        input_tensor: torch.Tensor,
+        scale_tensor: torch.Tensor,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        batch, seqlen, _ = input_tensor.shape
+
+        return torch.empty_like(input_tensor, dtype=torch.int8), torch.empty(batch, seqlen, dtype=torch.float32)
+
 
     # ====================================
     # Register rmsnorm
@@ -500,6 +525,15 @@ if os.getenv("MOJO_RUN_MODE", "EAGER") == "COMPILE":
 
         return grad_input, grad_weight, grad_bias
 
+
+    # ====================================
+    # Register Gemm
+    # ====================================
+    @torch.library.custom_op("ttx::matmul", mutates_args={})
+    def matmul(x: torch.Tensor, w: torch.Tensor, bias: torch.Tensor = None, )  -> torch.Tensor:
+        return matmul_impl(x, w, bias)
+
+
     # ====================================
     # Register Group gemm
     # ====================================
@@ -588,33 +622,33 @@ if os.getenv("MOJO_RUN_MODE", "EAGER") == "COMPILE":
     def store_paged_kv(
         key_states: torch.Tensor,
         value_states: torch.Tensor,
-        k_cache: torch.Tensor,
-        v_cache: torch.Tensor,
-        block_tables: torch.Tensor,
-        context_lens: torch.Tensor,
-        block_size: int,
+        key_cache: torch.Tensor,
+        value_cache: torch.Tensor,
+        block_table: torch.Tensor,
+        cu_seq_lens: torch.Tensor,
+        kv_lens: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         return store_paged_kv_impl(
             key_states,
             value_states,
-            k_cache,
-            v_cache,
-            block_tables,
-            context_lens,
-            block_size,
+            key_cache,
+            value_cache,
+            block_table,
+            cu_seq_lens,
+            kv_lens,
         )
 
     @store_paged_kv.register_fake
     def store_paged_kv_fake(
         key_states: torch.Tensor,
         value_states: torch.Tensor,
-        k_cache: torch.Tensor,
-        v_cache: torch.Tensor,
-        block_tables: torch.Tensor,
-        context_lens: torch.Tensor,
-        block_size: int,
+        key_cache: torch.Tensor,
+        value_cache: torch.Tensor,
+        block_table: torch.Tensor,
+        cu_seq_lens: torch.Tensor,
+        kv_lens: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        return torch.empty_like(k_cache), torch.empty_like(v_cache)
+        return torch.empty_like(key_cache), torch.empty_like(value_cache)
 
     # ====================================
     # Register Lightning_index
@@ -650,6 +684,7 @@ else:
     paged_attention_decode = paged_attention_decode_impl
     rope_fwd = rope_fwd_impl
     rope_bwd = rope_bwd_impl
+    quant_int8_infer = quant_int8_infer_impl
     rmsnorm_fwd = rmsnorm_fwd_impl
     rmsnorm_bwd = rmsnorm_bwd_impl
     rmsnorm_infer = rmsnorm_infer_impl
@@ -662,6 +697,7 @@ else:
     sdpa_bwd = sdpa_bwd_impl
     diffusion_attention_fwd = diffusion_attention_fwd_impl
     diffusion_attention_bwd = diffusion_attention_bwd_impl
+    matmul = matmul_impl
     m_grouped_matmul = m_grouped_matmul_impl
     k_grouped_matmul = k_grouped_matmul_impl
     store_paged_kv = store_paged_kv_impl
