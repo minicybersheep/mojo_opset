@@ -168,17 +168,8 @@ def rope_3d(
     if rope_dim is None:
         rope_dim = dim
     
-    assert rope_dim % 2 == 0, f"rope_dim must be even, got {rope_dim}"
-    assert rope_dim <= dim, f"rope_dim ({rope_dim}) must be <= dim ({dim})"
-    
     # Validate cos/sin shapes
     cos_batch_size = cos.shape[0]
-    sin_batch_size = sin.shape[0]
-    assert cos_batch_size == sin_batch_size, "cos and sin must have same batch size"
-    assert cos.shape[1] == seq_len, f"cos seq_len mismatch: {cos.shape[1]} vs {seq_len}"
-    assert sin.shape[1] == seq_len, f"sin seq_len mismatch: {sin.shape[1]} vs {seq_len}"
-    assert cos.shape[2] == rope_dim // 2, f"cos dim mismatch: {cos.shape[2]} vs {rope_dim // 2}"
-    assert sin.shape[2] == rope_dim // 2, f"sin dim mismatch: {sin.shape[2]} vs {rope_dim // 2}"
     
     q_rope = torch.empty_like(q_t)
     
@@ -341,16 +332,7 @@ def rope_4d(
     if rope_dim is None:
         rope_dim = head_dim
     
-    assert rope_dim % 2 == 0, f"rope_dim must be even, got {rope_dim}"
-    assert rope_dim <= head_dim, f"rope_dim ({rope_dim}) must be <= head_dim ({head_dim})"
-    
     cos_batch_size = cos.shape[0]
-    sin_batch_size = sin.shape[0]
-    assert cos_batch_size == sin_batch_size, "cos and sin must have same batch size"
-    assert cos.shape[1] == seq_len, f"cos seq_len mismatch: {cos.shape[1]} vs {seq_len}"
-    assert sin.shape[1] == seq_len, f"sin seq_len mismatch: {sin.shape[1]} vs {seq_len}"
-    assert cos.shape[2] == rope_dim // 2, f"cos dim mismatch: {cos.shape[2]} vs {rope_dim // 2}"
-    assert sin.shape[2] == rope_dim // 2, f"sin dim mismatch: {sin.shape[2]} vs {rope_dim // 2}"
     
     q_rope = torch.empty_like(q)
     
@@ -417,5 +399,5 @@ def indexer_rope_impl(
         rope_head_dim: int = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
     q_rp = rope(q, cos, sin, rope_head_dim)
-    k_rp =rope(k, cos, sin, rope_head_dim)
+    k_rp = rope(k, cos, sin, rope_head_dim)
     return q_rp, k_rp
