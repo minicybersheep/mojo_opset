@@ -11,6 +11,7 @@ from .operators.activation import MojoGeluQuant
 from .operators.activation import MojoSilu
 from .operators.activation import MojoSiluQuant
 from .operators.activation import MojoSwiGLU
+from .operators.activation import MojoIndexerRotateActivation
 
 """ attention """
 from .operators.attention import MojoDecodeGQA
@@ -104,6 +105,7 @@ __all__ = [
     "MojoSilu",
     "MojoSiluQuant",
     "MojoSwiGLU",
+    "MojoIndexerRotateActivation",
 
     "MojoPrefillGQA",
     "MojoPagedPrefillGQA",

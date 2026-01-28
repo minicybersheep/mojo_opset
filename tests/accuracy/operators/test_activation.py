@@ -7,6 +7,7 @@ from tests.utils import bypass_not_implemented
 from mojo_opset import MojoGelu
 from mojo_opset import MojoSilu
 from mojo_opset import MojoSwiGLU
+from mojo_opset import MojoIndexerRotateActivation
 
 
 @pytest.mark.parametrize(
@@ -48,3 +49,15 @@ def test_swiglu(gate_out, up_out):
     swiglu = MojoSwiGLU()
     swiglu_ref = MojoSwiGLU._registry.get("torch")()
     swiglu.forward_diff_with(swiglu_ref, gate_out, up_out)
+
+
+@pytest.mark.parametrize(
+    "x",
+    [(torch.rand(128, 128))],
+)
+@auto_switch_platform()
+@bypass_not_implemented
+def test_indexer_rotate_activation(x):
+    relu = MojoIndexerRotateActivation()
+    relu_ref = MojoIndexerRotateActivation._registry.get("torch")()
+    relu.forward_diff_with(relu_ref, x)
