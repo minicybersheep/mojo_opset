@@ -34,5 +34,4 @@ class TTXIndexerRotateActivation(MojoIndexerRotateActivation):
     supported_platforms_list = ["npu"]
 
     def forward(self, x: torch.Tensor)-> torch.Tensor:
-        # assert
         return indexer_rotate_activation(x)
