@@ -19,6 +19,7 @@ from .rmsnorm import rmsnorm_fwd_impl
 from .rmsnorm import rmsnorm_infer_impl
 from .rope import rope_bwd_impl
 from .rope import rope_fwd_impl
+from .indexer_rope import indexer_rope_impl
 from .sdpa import sdpa_bwd_impl
 from .sdpa import sdpa_fwd_impl
 from .sdpa import sdpa_infer_impl
